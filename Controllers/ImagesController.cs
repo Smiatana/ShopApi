@@ -1,29 +1,29 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ImagesController : Controller
+public class ImagesController : ControllerBase
 {
+    private readonly ShopContext _context;
     private readonly IWebHostEnvironment _env;
 
-    public ImagesController(IWebHostEnvironment env)
+    public ImagesController(ShopContext context, IWebHostEnvironment env)
     {
+        _context = context;
         _env = env;
     }
 
+    [Authorize]
     [HttpPost("upload")]
-    public async Task<IActionResult> UploadImage(IFormFile file)
+    public async Task<IActionResult> UploadImage(IFormFile file, int ownerId, OwnerType ownerType, string? altText = null, int position = 0)
     {
         if (file == null || file.Length == 0)
-        {
-            return BadRequest("No file uploaded");
-        }
-        
+            return BadRequest("No file uploaded.");
+
         var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-        if (!Directory.Exists(uploadsFolder))
-        {
-            Directory.CreateDirectory(uploadsFolder);
-        }
+        Directory.CreateDirectory(uploadsFolder);
 
         var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
         var filePath = Path.Combine(uploadsFolder, fileName);
@@ -33,7 +33,40 @@ public class ImagesController : Controller
             await file.CopyToAsync(stream);
         }
 
-        var url = $"/uploads/{fileName}";
-        return Ok(new { url });
+        var image = new Image
+        {
+            OwnerId = ownerId,
+            OwnerType = ownerType,
+            Url = $"/uploads/{fileName}",
+            AltText = altText ?? string.Empty,
+            Position = position
+        };
+
+        _context.Images.Add(image);
+        await _context.SaveChangesAsync();
+
+        return Ok(image);
+    }
+
+    [HttpGet("by-owner")]
+    public async Task<ActionResult<IEnumerable<Image>>> GetImages(int ownerId, OwnerType ownerType)
+    {
+        return await _context.Images
+            .Where(i => i.OwnerId == ownerId && i.OwnerType == ownerType)
+            .ToListAsync();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteImage(int id)
+    {
+        var image = await _context.Images.FindAsync(id);
+        if (image == null)
+            return NotFound();
+
+        _context.Images.Remove(image);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
     }
 }
