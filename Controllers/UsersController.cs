@@ -14,6 +14,20 @@ public class UsersController : ControllerBase
         _context = context;
     }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult<User>> GetUser(int id)
+    {
+        var user = await _context.Users
+            .Include(u => u.Images)
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+            return NotFound();
+
+        return user;
+    }
+
+
     [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateUser(int id, User user)
