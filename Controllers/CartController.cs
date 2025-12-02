@@ -20,7 +20,7 @@ public class CartController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<Cart>> GetCart()
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = AuthHelper.GetUserId(User);
 
         var cart = await _context.Carts
             .Include(c => c.Items)
@@ -39,7 +39,7 @@ public class CartController : ControllerBase
     [HttpPost("items")]
     public async Task<ActionResult<CartItem>> AddItem(int productId, int quantity)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = AuthHelper.GetUserId(User);
 
         var cart = await _context.Carts
             .Include(c => c.Items)
@@ -78,7 +78,7 @@ public class CartController : ControllerBase
     [HttpPut("items/{itemId}")]
     public async Task<IActionResult> UpdateItem(int itemId, int quantity)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = AuthHelper.GetUserId(User);
 
         var item = await _context.CartItems
             .Include(i => i.Cart)
@@ -97,7 +97,7 @@ public class CartController : ControllerBase
     [HttpDelete("items/{itemId}")]
     public async Task<IActionResult> RemoveItem(int itemId)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = AuthHelper.GetUserId(User);
 
         var item = await _context.CartItems
             .Include(i => i.Cart)
@@ -116,7 +116,7 @@ public class CartController : ControllerBase
     [HttpDelete("clear")]
     public async Task<IActionResult> ClearCart()
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var userId = AuthHelper.GetUserId(User);
 
         var cart = await _context.Carts
             .Include(c => c.Items)
