@@ -39,11 +39,11 @@ public class AuthController : ControllerBase
         return Ok("User registered successfully.");
     }
 
-    [HttpPost("login")]
-    public async Task<IActionResult> Login(string email, string password)
+   [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             return Unauthorized("Invalid credentials.");
 
         var claims = new[]
@@ -64,4 +64,5 @@ public class AuthController : ControllerBase
 
         return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
     }
+
 }
