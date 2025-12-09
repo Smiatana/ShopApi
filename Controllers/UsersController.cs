@@ -94,4 +94,21 @@ public class UsersController : ControllerBase
 
         return NoContent();
     }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<User>> GetMe()
+    {
+        var email = User.Identity?.Name;
+
+        var user = await _context.Users
+            .Include(u => u.Images)
+            .FirstOrDefaultAsync(u => u.Email == email);
+
+        if (user == null)
+            return NotFound();
+
+        return user;
+    }
+
 }

@@ -33,6 +33,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.RequireHttpsMetadata = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -50,6 +52,8 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Aa1111!"));
+
 app.UseCors("AllowAll");
 
 // Configure the HTTP request pipeline.
@@ -58,12 +62,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.MapControllers();
+
+app.UseRouting();
+
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseHttpsRedirection();
+app.MapControllers();
+
 
 app.Run();
+
+
+
+
