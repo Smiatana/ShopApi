@@ -48,6 +48,30 @@ public class ImagesController : ControllerBase
         return Ok(image);
     }
 
+    [Authorize(Roles = "Admin")]
+    [HttpPost("reorder")]
+    public async Task<IActionResult> ReorderImages([FromBody] UpdateImageOrderRequest request)
+    {
+        if (request.Items == null || request.Items.Count == 0)
+            return BadRequest("No items provided.");
+
+        var imageIds = request.Items.Select(i => i.ImageId).ToList();
+        var images = await _context.Images
+            .Where(i => imageIds.Contains(i.Id))
+            .ToListAsync();
+
+        var dict = request.Items.ToDictionary(i => i.ImageId, i => i.Position);
+
+        foreach (var img in images)
+        {
+            if (dict.TryGetValue(img.Id, out var pos))
+                img.Position = pos;
+        }
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpGet("by-owner")]
     public async Task<ActionResult<IEnumerable<Image>>> GetImages(int ownerId, OwnerType ownerType)
     {
@@ -69,4 +93,5 @@ public class ImagesController : ControllerBase
 
         return NoContent();
     }
+
 }

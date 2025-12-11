@@ -30,21 +30,37 @@ public class ShopContext : DbContext
             .Property(c => c.Products)
             .HasColumnType("jsonb");
 
-
+        modelBuilder.Entity<Image>()
+        .Property(i => i.OwnerType)
+        .HasConversion<string>();
 
         modelBuilder.Entity<Image>()
-            .Property(i => i.OwnerType)
-            .HasConversion<string>();
+            .HasOne(i => i.Product)
+            .WithMany(p => p.Images)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Image>()
+            .HasOne(i => i.Review)
+            .WithMany(r => r.Images)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Image>()
+            .HasOne(i => i.User)
+            .WithMany(u => u.Images)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Image>()
+            .HasOne(i => i.Category)
+            .WithMany()
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Order>()
             .Property(o => o.Status)
             .HasConversion<string>();
 
-
-
         modelBuilder.Entity<Product>()
             .HasOne(p => p.Category)
-            .WithMany(c => c.Products)
+            .WithMany()
             .HasForeignKey(p => p.CategoryId);
 
         modelBuilder.Entity<CartItem>()

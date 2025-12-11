@@ -52,8 +52,6 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-Console.WriteLine(BCrypt.Net.BCrypt.HashPassword("Aa1111!"));
-
 app.UseCors("AllowAll");
 
 // Configure the HTTP request pipeline.

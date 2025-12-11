@@ -1,0 +1,140 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace ShopApi.Migrations
+{
+    /// <inheritdoc />
+    public partial class YetAnotherImageFixPleasWorkAAAAA : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Categories_CategoryId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Products_ProductId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Reviews_ReviewId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Users_UserId",
+                table: "Images");
+
+            migrationBuilder.AddColumn<int>(
+                name: "CategoryId1",
+                table: "Products",
+                type: "integer",
+                nullable: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Products_CategoryId1",
+                table: "Products",
+                column: "CategoryId1");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Categories_CategoryId",
+                table: "Images",
+                column: "CategoryId",
+                principalTable: "Categories",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Products_ProductId",
+                table: "Images",
+                column: "ProductId",
+                principalTable: "Products",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Reviews_ReviewId",
+                table: "Images",
+                column: "ReviewId",
+                principalTable: "Reviews",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Users_UserId",
+                table: "Images",
+                column: "UserId",
+                principalTable: "Users",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Products_Categories_CategoryId1",
+                table: "Products",
+                column: "CategoryId1",
+                principalTable: "Categories",
+                principalColumn: "Id");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Categories_CategoryId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Products_ProductId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Reviews_ReviewId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Images_Users_UserId",
+                table: "Images");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Products_Categories_CategoryId1",
+                table: "Products");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Products_CategoryId1",
+                table: "Products");
+
+            migrationBuilder.DropColumn(
+                name: "CategoryId1",
+                table: "Products");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Categories_CategoryId",
+                table: "Images",
+                column: "CategoryId",
+                principalTable: "Categories",
+                principalColumn: "Id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Products_ProductId",
+                table: "Images",
+                column: "ProductId",
+                principalTable: "Products",
+                principalColumn: "Id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Reviews_ReviewId",
+                table: "Images",
+                column: "ReviewId",
+                principalTable: "Reviews",
+                principalColumn: "Id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Images_Users_UserId",
+                table: "Images",
+                column: "UserId",
+                principalTable: "Users",
+                principalColumn: "Id");
+        }
+    }
+}

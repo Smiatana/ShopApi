@@ -6,6 +6,8 @@
 # dotenv files
 .env
 
+wwwroot
+
 # User-specific files
 *.rsuser
 *.suo

@@ -1,4 +1,4 @@
-public enum OwnerType { Product, Review, User }
+public enum OwnerType { Product, Category, Review, User }
 public enum OrderStatus { Pending, Paid, Shipped, Delivered }
 
 public class User
@@ -50,12 +50,13 @@ public class Image
     
     public int OwnerId { get; set; }
     public string Url { get; set; }
-    public string AltText { get; set; }
+    public string? AltText { get; set; }
     public int Position { get; set; }
     public OwnerType OwnerType { get; set; }
-    public Product Product { get; set; }
-    public Review Review { get; set; }
-    public User User { get; set; }
+    public Category? Category { get; set; }
+    public Product? Product { get; set; }
+    public Review? Review { get; set; }
+    public User? User { get; set; }
 }
 
 public class Cart
