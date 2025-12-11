@@ -22,7 +22,8 @@ public class CategoriesController : ControllerBase
         return await _context.Categories.ToListAsync();
     }
 
-    [HttpGet("id")]
+    [HttpGet("{id}")]
+
     public async Task<ActionResult<Category>> GetCategory(int id)
     {
         var category = await _context.Categories.FindAsync(id);
@@ -44,6 +45,7 @@ public class CategoriesController : ControllerBase
             .Where(p => p.CategoryId == id)
             .Include(p => p.Images.OrderBy(i => i.Position))
             .ToListAsync();
+
 
         return products;
     }

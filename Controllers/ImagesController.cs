@@ -42,11 +42,37 @@ public class ImagesController : ControllerBase
             Position = position
         };
 
+        if (ownerType == OwnerType.Product)
+        {
+            var product = await _context.Products.FindAsync(ownerId);
+            if (product != null)
+                image.Product = product;
+        }
+        else if (ownerType == OwnerType.Category)
+        {
+            var category = await _context.Categories.FindAsync(ownerId);
+            if (category != null)
+                image.Category = category;
+        }
+        else if (ownerType == OwnerType.Review)
+        {
+            var review = await _context.Reviews.FindAsync(ownerId);
+            if (review != null)
+                image.Review = review;
+        }
+        else if (ownerType == OwnerType.User)
+        {
+            var user = await _context.Users.FindAsync(ownerId);
+            if (user != null)
+                image.User = user;
+        }
+
         _context.Images.Add(image);
         await _context.SaveChangesAsync();
 
         return Ok(image);
     }
+
 
     [Authorize(Roles = "Admin")]
     [HttpPost("reorder")]

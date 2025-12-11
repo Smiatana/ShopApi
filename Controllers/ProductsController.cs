@@ -18,21 +18,37 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
     {
-        return await _context.Products.ToListAsync();
+        var products = await _context.Products.ToListAsync();
+
+        var productIds = products.Select(p => p.Id).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .OrderBy(i => i.Position)
+            .ToListAsync();
+
+        foreach (var p in products)
+            p.Images = images.Where(i => i.OwnerId == p.Id).ToList();
+
+        return products;
     }
+
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Product>> GetProduct(int id)
     {
-        var product = await _context.Products
-            .Include(p => p.Images.OrderBy(i => i.Position))
-            .FirstOrDefaultAsync(p => p.Id == id);
-
+        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
         if (product == null)
             return NotFound();
 
+        product.Images = await _context.Images
+            .Where(i => i.OwnerId == id && i.OwnerType == OwnerType.Product)
+            .OrderBy(i => i.Position)
+            .ToListAsync();
+
         return product;
     }
+
 
 
     [HttpGet("search")]
@@ -43,9 +59,7 @@ public class ProductsController : ControllerBase
         if (string.IsNullOrWhiteSpace(query) && categoryId == null)
             return BadRequest("Provide query or categoryId.");
 
-        var q = _context.Products
-            .Include(p => p.Images.OrderBy(i => i.Position))
-            .AsQueryable();
+        var q = _context.Products.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -59,8 +73,18 @@ public class ProductsController : ControllerBase
         if (categoryId.HasValue)
             q = q.Where(p => p.CategoryId == categoryId.Value);
 
-        var results = await q.ToListAsync();
-        return results;
+        var products = await q.ToListAsync();
+        var ids = products.Select(p => p.Id).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && ids.Contains(i.OwnerId))
+            .OrderBy(i => i.Position)
+            .ToListAsync();
+
+        foreach (var p in products)
+            p.Images = images.Where(i => i.OwnerId == p.Id).ToList();
+
+        return products;
     }
 
 #endregion
@@ -121,10 +145,15 @@ public class ProductsController : ControllerBase
                     OwnerType = OwnerType.Product,
                     Url = $"/uploads/{fileName}",
                     AltText = product.Name,
-                    Position = position++
+                    Position = position++,
+                    Product = product,
+                    Category = null,
+                    Review = null,
+                    User = null
                 };
 
                 _context.Images.Add(image);
+
             }
 
             await _context.SaveChangesAsync();
@@ -181,7 +210,8 @@ public class ProductsController : ControllerBase
         product.Description = request.Description;
         product.Specs = request.Specs ?? new Dictionary<string, object>();
         product.StockQuantity = request.StockQuantity;
-        product.CategoryId = request.CategoryId;
+        product.CategoryId = request.CategoryId == 0 ? product.CategoryId : request.CategoryId;
+
 
         if (request.NewImages != null && request.NewImages.Count > 0)
         {
@@ -213,6 +243,7 @@ public class ProductsController : ControllerBase
                     Url = $"/uploads/{fileName}",
                     AltText = product.Name,
                     Position = position++,
+                    
 
 
                     Product = product,
