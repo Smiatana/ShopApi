@@ -46,6 +46,15 @@ public class CategoriesController : ControllerBase
             .Include(p => p.Images.OrderBy(i => i.Position))
             .ToListAsync();
 
+        var productIds = products.Select(p => p.Id).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .OrderBy(i => i.Position)
+            .ToListAsync();
+
+        foreach (var p in products)
+            p.Images = images.Where(i => i.OwnerId == p.Id).ToList();
 
         return products;
     }
