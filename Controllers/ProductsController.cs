@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.Formats.Asn1;
+using System.Text.Json;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -208,7 +209,12 @@ public class ProductsController : ControllerBase
         product.Brand = request.Brand;
         product.Price = request.Price;
         product.Description = request.Description;
-        product.Specs = request.Specs ?? new Dictionary<string, object>();
+
+        Console.WriteLine("-----------------------------SPECS: " + request.Specs);
+        product.Specs = string.IsNullOrWhiteSpace(request.Specs)
+        ? product.Specs
+        : JsonSerializer.Deserialize<Dictionary<string, object>>(request.Specs);
+
         product.StockQuantity = request.StockQuantity;
         product.CategoryId = request.CategoryId == 0 ? product.CategoryId : request.CategoryId;
 

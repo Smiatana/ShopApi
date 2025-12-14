@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 public enum OwnerType { Product, Category, Review, User }
 public enum OrderStatus { Pending, Paid, Shipped, Delivered }
 
@@ -27,12 +29,12 @@ public class Product
     public Dictionary<string, object> Specs { get; set; }
     public int StockQuantity { get; set; }
 
-    public Category Category { get; set; }
-    public ICollection<Image> Images { get; set; }
-    public ICollection<Review> Reviews { get; set; }
-    public ICollection<Discount> Discounts { get; set; }
-    public ICollection<OrderItem> OrderItems { get; set; }
-    public ICollection<CartItem> CartItems { get; set; }
+    public Category? Category { get; set; }
+    public ICollection<Image>? Images { get; set; }
+    public ICollection<Review>? Reviews { get; set; }
+    public ICollection<Discount>? Discounts { get; set; }
+    public ICollection<OrderItem>? OrderItems { get; set; }
+    public ICollection<CartItem>? CartItems { get; set; }
 }
 
 public class Category
@@ -53,9 +55,14 @@ public class Image
     public string? AltText { get; set; }
     public int Position { get; set; }
     public OwnerType OwnerType { get; set; }
+
+    [JsonIgnore]
     public Category? Category { get; set; }
+    [JsonIgnore]
     public Product? Product { get; set; }
+    [JsonIgnore]
     public Review? Review { get; set; }
+    [JsonIgnore]
     public User? User { get; set; }
 }
 

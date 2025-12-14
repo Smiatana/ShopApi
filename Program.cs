@@ -48,7 +48,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// builder.Services.AddControllers()
+//     .AddJsonOptions(x =>
+//         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve
+//     );
+
+
 builder.Services.AddAuthorization();
+
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<ScraperService>();
 
 var app = builder.Build();
 
