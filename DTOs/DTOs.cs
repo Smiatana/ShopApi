@@ -1,3 +1,5 @@
+// good luck navigating in this file. im just too lazy to create separate for each dto
+
 public class LoginRequest
 {
     public string Email { get; set; }
@@ -75,4 +77,36 @@ public class ImportRequest
 {
     public int CategoryId { get; set; }
     public List<ScrapedProductResult> Products { get; set; } = new();
+}
+
+public class CreateDiscountRequest
+{
+    public int ProductId { get; set; }
+    public decimal Percentage { get; set; }
+    public DateTime ValidFrom { get; set; }
+    public DateTime ValidTo { get; set; }
+}
+
+public class UpdateDiscountRequest
+{
+    public decimal Percentage { get; set; }
+    public DateTime ValidFrom { get; set; }
+    public DateTime ValidTo { get; set; }
+    public bool Active { get; set; }
+}
+
+public class DiscountDto
+{
+    public int Id { get; set; }
+    public decimal Percentage { get; set; }
+    public DateTime ValidFrom { get; set; }
+    public DateTime ValidTo { get; set; }
+    public bool Active { get; set; }
+    public ProductNameDto Product { get; set; }
+}
+
+public class ProductNameDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
 }

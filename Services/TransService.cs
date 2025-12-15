@@ -8,7 +8,7 @@ public class TranslatorService
     public TranslatorService(IHttpClientFactory factory)
     {
         _client = factory.CreateClient();
-        _client.BaseAddress = new Uri("https://libretranslate.com/");
+        _client.BaseAddress = new Uri("https://localhost:6769/");
     }
 
     public async Task<string> TranslateAsync(

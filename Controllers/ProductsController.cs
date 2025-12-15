@@ -210,14 +210,12 @@ public class ProductsController : ControllerBase
         product.Price = request.Price;
         product.Description = request.Description;
 
-        Console.WriteLine("-----------------------------SPECS: " + request.Specs);
         product.Specs = string.IsNullOrWhiteSpace(request.Specs)
         ? product.Specs
         : JsonSerializer.Deserialize<Dictionary<string, object>>(request.Specs);
 
         product.StockQuantity = request.StockQuantity;
         product.CategoryId = request.CategoryId == 0 ? product.CategoryId : request.CategoryId;
-
 
         if (request.NewImages != null && request.NewImages.Count > 0)
         {
