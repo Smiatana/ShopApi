@@ -48,16 +48,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// builder.Services.AddControllers()
-//     .AddJsonOptions(x =>
-//         x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve
-//     );
-
-
 builder.Services.AddAuthorization();
 
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<ScraperService>();
+builder.Services.AddScoped<TranslatorService>();
+builder.Services.AddScoped<ScraperService>();
 
 var app = builder.Build();
 

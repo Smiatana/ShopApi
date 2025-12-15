@@ -6,10 +6,14 @@ using HtmlAgilityPack;
 public class ScraperService
 {
     private readonly IHttpClientFactory _httpFactory;
+    private readonly TranslatorService _translator;
 
-    public ScraperService(IHttpClientFactory httpFactory)
+    public ScraperService(
+        IHttpClientFactory httpFactory,
+        TranslatorService translator)
     {
         _httpFactory = httpFactory;
+        _translator = translator;
     }
 
     private string ExtractBrand(string url, string name)
@@ -184,6 +188,19 @@ public class ScraperService
         }
 
         var imageUrls = ExtractProductImages(doc);
+
+        // var translatedName = await _translator.TranslateAsync(cardName);
+
+        //var translatedDescription = await _translator.TranslateAsync(description);
+
+        // var translatedSpecs = new Dictionary<string, object>();
+
+        // foreach (var kv in specs)
+        // {
+        //     var translatedKey = await _translator.TranslateAsync(kv.Key);
+        //     var translatedValue = await _translator.TranslateAsync(kv.Value?.ToString() ?? "");
+        //     translatedSpecs[translatedKey] = translatedValue;
+        // }
 
         var product = new Product
         {
