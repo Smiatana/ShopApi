@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
-using System.Formats.Asn1;
 using System.Text.Json;
 
 [ApiController]
@@ -15,52 +13,58 @@ public class ProductsController : ControllerBase
     {
         _context = context;
     }
-#region GET
+
+    #region GET
+
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+    public async Task<ActionResult<IEnumerable<ProductListDto>>> GetProducts()
     {
-        var products = await _context.Products.ToListAsync();
+        var products = await _context.Products
+            .Include(p => p.Discounts)
+            .ToListAsync();
 
         var productIds = products.Select(p => p.Id).ToList();
 
         var images = await _context.Images
             .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
-            .OrderBy(i => i.Position)
             .ToListAsync();
 
-        foreach (var p in products)
-            p.Images = images.Where(i => i.OwnerId == p.Id).ToList();
+        var now = DateTime.UtcNow;
 
-        return products;
+        return products
+            .Select(p => ProductMapper.ToListDto(p, images, now))
+            .ToList();
     }
 
-
     [HttpGet("{id}")]
-    public async Task<ActionResult<Product>> GetProduct(int id)
+    public async Task<ActionResult<ProductDetailsDto>> GetProduct(int id)
     {
-        var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+        var product = await _context.Products
+            .FirstOrDefaultAsync(p => p.Id == id);
+
         if (product == null)
             return NotFound();
 
-        product.Images = await _context.Images
-            .Where(i => i.OwnerId == id && i.OwnerType == OwnerType.Product)
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && i.OwnerId == id)
             .OrderBy(i => i.Position)
             .ToListAsync();
 
-        return product;
+        return ProductMapper.ToDetailsDto(product, images);
     }
 
 
-
-    [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<Product>>> SearchProducts(
-        [FromQuery] string query,
+   [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<ProductListDto>>> SearchProducts(
+        [FromQuery] string? query,
         [FromQuery] int? categoryId = null)
     {
         if (string.IsNullOrWhiteSpace(query) && categoryId == null)
             return BadRequest("Provide query or categoryId.");
 
-        var q = _context.Products.AsQueryable();
+        var q = _context.Products
+            .Include(p => p.Discounts)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query))
         {
@@ -75,21 +79,45 @@ public class ProductsController : ControllerBase
             q = q.Where(p => p.CategoryId == categoryId.Value);
 
         var products = await q.ToListAsync();
-        var ids = products.Select(p => p.Id).ToList();
+
+        var productIds = products.Select(p => p.Id).ToList();
 
         var images = await _context.Images
-            .Where(i => i.OwnerType == OwnerType.Product && ids.Contains(i.OwnerId))
-            .OrderBy(i => i.Position)
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
             .ToListAsync();
 
-        foreach (var p in products)
-            p.Images = images.Where(i => i.OwnerId == p.Id).ToList();
+        var now = DateTime.UtcNow;
 
-        return products;
+        return products
+            .Select(p => ProductMapper.ToListDto(p, images, now))
+            .ToList();
     }
 
-#endregion
-#region POST
+
+
+    [HttpGet("discounted")]
+    public async Task<ActionResult<IEnumerable<ProductListDto>>> GetDiscountedProducts()
+    {
+        var now = DateTime.UtcNow;
+
+        var products = await _context.Products
+            .Include(p => p.Images)
+            .Include(p => p.Discounts)
+            .Where(p => p.Discounts.Any(d => d.Active && d.ValidFrom <= now && d.ValidTo >= now))
+            .ToListAsync();
+
+        var productIds = products.Select(p => p.Id).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .ToListAsync();
+
+        return products.Select(p => ProductMapper.ToListDto(p, images, now)).ToList();
+    }
+
+    #endregion
+
+    #region POST
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
@@ -98,7 +126,7 @@ public class ProductsController : ControllerBase
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetProduct), new {id = product.Id}, product);
+        return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
     }
 
     [Authorize(Roles = "Admin")]
@@ -127,7 +155,6 @@ public class ProductsController : ControllerBase
             Directory.CreateDirectory(uploadsFolder);
 
             int position = 0;
-
             foreach (var file in request.Images)
             {
                 if (file == null || file.Length == 0) continue;
@@ -135,26 +162,18 @@ public class ProductsController : ControllerBase
                 var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
                 var filePath = Path.Combine(uploadsFolder, fileName);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
 
-                var image = new Image
+                _context.Images.Add(new Image
                 {
                     OwnerId = product.Id,
                     OwnerType = OwnerType.Product,
                     Url = $"/uploads/{fileName}",
                     AltText = product.Name,
                     Position = position++,
-                    Product = product,
-                    Category = null,
-                    Review = null,
-                    User = null
-                };
-
-                _context.Images.Add(image);
-
+                    Product = product
+                });
             }
 
             await _context.SaveChangesAsync();
@@ -167,8 +186,9 @@ public class ProductsController : ControllerBase
         return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, created);
     }
 
-#endregion
-#region PUT
+    #endregion
+
+    #region PUT
 
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
@@ -187,8 +207,7 @@ public class ProductsController : ControllerBase
         {
             if (!_context.Products.Any(e => e.Id == id))
                 return NotFound();
-            else
-                throw;
+            throw;
         }
 
         return NoContent();
@@ -211,8 +230,8 @@ public class ProductsController : ControllerBase
         product.Description = request.Description;
 
         product.Specs = string.IsNullOrWhiteSpace(request.Specs)
-        ? product.Specs
-        : JsonSerializer.Deserialize<Dictionary<string, object>>(request.Specs);
+            ? product.Specs
+            : JsonSerializer.Deserialize<Dictionary<string, object>>(request.Specs);
 
         product.StockQuantity = request.StockQuantity;
         product.CategoryId = request.CategoryId == 0 ? product.CategoryId : request.CategoryId;
@@ -227,7 +246,6 @@ public class ProductsController : ControllerBase
                 .MaxAsync(i => (int?)i.Position) ?? -1;
 
             int position = currentMaxPosition + 1;
-
             foreach (var file in request.NewImages)
             {
                 if (file == null || file.Length == 0) continue;
@@ -235,28 +253,18 @@ public class ProductsController : ControllerBase
                 var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
                 var filePath = Path.Combine(uploadsFolder, fileName);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await file.CopyToAsync(stream);
-                }
+                using var stream = new FileStream(filePath, FileMode.Create);
+                await file.CopyToAsync(stream);
 
-                var image = new Image
+                _context.Images.Add(new Image
                 {
                     OwnerId = product.Id,
                     OwnerType = OwnerType.Product,
                     Url = $"/uploads/{fileName}",
                     AltText = product.Name,
                     Position = position++,
-                    
-
-
-                    Product = product,
-                    Category = null,
-                    Review = null,
-                    User = null
-                };
-
-                _context.Images.Add(image);
+                    Product = product
+                });
             }
         }
 
@@ -277,13 +285,13 @@ public class ProductsController : ControllerBase
             return NotFound("Target category not found.");
 
         product.CategoryId = newCategoryId;
-
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
-#endregion
-#region DELETE
+    #endregion
+
+    #region DELETE
 
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
@@ -295,9 +303,8 @@ public class ProductsController : ControllerBase
 
         _context.Products.Remove(product);
         await _context.SaveChangesAsync();
-
         return NoContent();
     }
 
-#endregion
+    #endregion
 }

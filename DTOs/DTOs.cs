@@ -110,3 +110,66 @@ public class ProductNameDto
     public int Id { get; set; }
     public string Name { get; set; }
 }
+
+public class UserAdminDto
+{
+    public int Id { get; set; }
+    public string Email { get; set; } = null!;
+    public string Name { get; set; } = null!;
+    public string Role { get; set; } = "User";
+}
+
+public class ChangePasswordRequest
+{
+    public string NewPassword { get; set; } = null!;
+}
+
+public class ChangeRoleRequest
+{
+    public string NewRole { get; set; } = null!;
+}
+
+public class ProductListDto
+{
+    public int Id { get; set; }
+    public int CategoryId { get; set; }
+    public string Name { get; set; }
+    public string Brand { get; set; }
+    public decimal Price { get; set; }
+    public decimal DiscountedPrice { get; set; }
+    public decimal DiscountPercentage { get; set; }
+    public int StockQuantity { get; set; }
+    public List<ImageDto> Images { get; set; } = new();
+}
+
+public class ImageDto
+{
+    public string Url { get; set; }
+    public string? AltText { get; set; }
+    public int Position { get; set; }
+}
+
+public class ProductDetailsDto
+{
+    public int Id { get; set; }
+    public int CategoryId { get; set; }
+
+    public string Name { get; set; }
+    public string Brand { get; set; }
+    public decimal Price { get; set; }
+
+    public string Description { get; set; }
+    public Dictionary<string, object> Specs { get; set; } = new();
+
+    public int StockQuantity { get; set; }
+
+    public List<ProductImageDetailsDto> Images { get; set; } = new();
+}
+
+public class ProductImageDetailsDto
+{
+    public int Id { get; set; }
+    public string Url { get; set; }
+    public string? AltText { get; set; }
+    public int Position { get; set; }
+}

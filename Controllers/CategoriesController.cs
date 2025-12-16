@@ -35,28 +35,27 @@ public class CategoriesController : ControllerBase
     }
 
     [HttpGet("{id}/products")]
-    public async Task<ActionResult<IEnumerable<Product>>> GetProductsByCategory(int id)
+    public async Task<ActionResult<IEnumerable<ProductListDto>>> GetProductsByCategory(int id)
     {
-        var categoryExists = await _context.Categories.AnyAsync(c => c.Id == id);
-        if (!categoryExists)
+        if (!await _context.Categories.AnyAsync(c => c.Id == id))
             return NotFound();
 
         var products = await _context.Products
             .Where(p => p.CategoryId == id)
-            .Include(p => p.Images.OrderBy(i => i.Position))
+            .Include(p => p.Discounts)
             .ToListAsync();
 
         var productIds = products.Select(p => p.Id).ToList();
 
         var images = await _context.Images
             .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
-            .OrderBy(i => i.Position)
             .ToListAsync();
 
-        foreach (var p in products)
-            p.Images = images.Where(i => i.OwnerId == p.Id).ToList();
+        var now = DateTime.UtcNow;
 
-        return products;
+        return products
+            .Select(p => ProductMapper.ToListDto(p, images, now))
+            .ToList();
     }
 
 
