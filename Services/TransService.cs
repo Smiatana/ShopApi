@@ -8,13 +8,13 @@ public class TranslatorService
     public TranslatorService(IHttpClientFactory factory)
     {
         _client = factory.CreateClient();
-        _client.BaseAddress = new Uri("https://localhost:6769/");
+        _client.BaseAddress = new Uri("http://127.0.0.1:6769/");
     }
 
     public async Task<string> TranslateAsync(
         string text,
-        string source = "auto",
-        string target = "be")
+        string source = "ru",
+        string target = "en")
     {
         if (string.IsNullOrWhiteSpace(text))
             return text;
@@ -40,9 +40,9 @@ public class TranslatorService
         using var doc = JsonDocument.Parse(resultJson);
 
 
-        Console.WriteLine(doc.RootElement
-            .GetProperty("translatedText")
-            .GetString() ?? text);
+        // Console.WriteLine(doc.RootElement
+        //     .GetProperty("translatedText")
+        //     .GetString() ?? text);
 
         return doc.RootElement
             .GetProperty("translatedText")

@@ -17,9 +17,26 @@ public class CategoriesController : ControllerBase
 #region GET
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Category>> >GetCategories()
+    public async Task<ActionResult<IEnumerable<object>>> GetCategories()
     {
-        return await _context.Categories.ToListAsync();
+        var categories = await _context.Categories.ToListAsync();
+        var categoryIds = categories.Select(c => c.Id).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Category && categoryIds.Contains(i.OwnerId))
+            .ToListAsync();
+
+        return categories.Select(c => new
+        {
+            c.Id,
+            c.Name,
+            c.Description,
+            Image = images
+                .Where(i => i.OwnerId == c.Id)
+                .OrderBy(i => i.Position)
+                .Select(i => i.Url)
+                .FirstOrDefault()
+        }).ToList();
     }
 
     [HttpGet("{id}")]
@@ -148,6 +165,63 @@ public class CategoriesController : ControllerBase
 
         return NoContent();
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPut("{id}/with-image")]
+    public async Task<IActionResult> UpdateCategoryWithImage(
+        int id,
+        [FromForm] CreateCategoryRequest request,
+        [FromServices] IWebHostEnvironment env)
+    {
+        var category = await _context.Categories.FindAsync(id);
+        if (category == null)
+            return NotFound();
+
+        category.Name = request.Name;
+        category.Description = request.Description;
+
+        if (request.Image != null && request.Image.Length > 0)
+        {
+            var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = Guid.NewGuid() + Path.GetExtension(request.Image.FileName);
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await request.Image.CopyToAsync(stream);
+            }
+
+            var existingImage = await _context.Images.FirstOrDefaultAsync(i =>
+                i.OwnerType == OwnerType.Category &&
+                i.OwnerId == category.Id &&
+                i.Position == 0
+            );
+
+            if (existingImage != null)
+            {
+                existingImage.Url = $"/uploads/{fileName}";
+                existingImage.AltText = request.AltText ?? category.Name;
+            }
+            else
+            {
+                _context.Images.Add(new Image
+                {
+                    OwnerId = category.Id,
+                    OwnerType = OwnerType.Category,
+                    Url = $"/uploads/{fileName}",
+                    AltText = request.AltText ?? category.Name,
+                    Position = 0
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+
 #endregion
 #region DELETE
 

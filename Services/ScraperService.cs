@@ -189,28 +189,28 @@ public class ScraperService
 
         var imageUrls = ExtractProductImages(doc);
 
-        // var translatedName = await _translator.TranslateAsync(cardName);
+        var translatedName = await _translator.TranslateAsync(cardName);
 
-        //var translatedDescription = await _translator.TranslateAsync(description);
+        var translatedDescription = await _translator.TranslateAsync(description);
 
-        // var translatedSpecs = new Dictionary<string, object>();
+        var translatedSpecs = new Dictionary<string, object>();
 
-        // foreach (var kv in specs)
-        // {
-        //     var translatedKey = await _translator.TranslateAsync(kv.Key);
-        //     var translatedValue = await _translator.TranslateAsync(kv.Value?.ToString() ?? "");
-        //     translatedSpecs[translatedKey] = translatedValue;
-        // }
+        foreach (var kv in specs)
+        {
+            var translatedKey = await _translator.TranslateAsync(kv.Key);
+            var translatedValue = await _translator.TranslateAsync(kv.Value?.ToString() ?? "");
+            translatedSpecs[translatedKey] = translatedValue;
+        }
 
         var product = new Product
         {
-            Name = cardName,
+            Name = translatedName,
             Price = cardPrice,
             Brand = ExtractBrand(url, cardName),
-            Description = description,
+            Description = translatedDescription,
             CategoryId = categoryId,
             StockQuantity = 0,
-            Specs = specs,
+            Specs = translatedSpecs,
             Images = new List<Image>(),
             Reviews = new List<Review>(),
             CartItems = new List<CartItem>(),
