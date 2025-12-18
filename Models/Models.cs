@@ -91,7 +91,7 @@ public class Comparison
     public int Id { get; set; }
     public int UserId { get; set; }
     public string Name { get; set; }
-    public List<int> Products { get; set; } // [id, id]
+    public int[] Products { get; set; } = []; // [id, id]
 
     public User User { get; set; }
 }

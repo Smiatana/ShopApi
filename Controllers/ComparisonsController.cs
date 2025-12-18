@@ -18,42 +18,66 @@ public class ComparisonsController : ControllerBase
 
     [Authorize]
     [HttpGet("category/{categoryId}")]
-    public async Task<ActionResult<object>> GetComparison(int categoryId)
+    public async Task<ActionResult<ComparisonResponseDto>> GetComparison(int categoryId)
     {
         var userId = AuthHelper.GetUserId(User, _context);
 
         var comparison = await _context.Comparisons
             .FirstOrDefaultAsync(c => c.UserId == userId && c.Name == categoryId.ToString());
-        
+
         if (comparison == null)
-        {
             return NotFound();
-        }
 
         var products = await _context.Products
             .Where(p => comparison.Products.Contains(p.Id))
             .ToListAsync();
-        
-        var groupedSpecs = new Dictionary<string, List<object>>();
-        foreach (var product in products)
+
+        var productIds = products.Select(p => p.Id).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .ToListAsync();
+
+        var productDtos = products.Select(p =>
         {
-            foreach (var kv in product.Specs)
+            var image = images
+                .Where(i => i.OwnerId == p.Id)
+                .OrderBy(i => i.Position)
+                .FirstOrDefault();
+
+            return new ComparisonProductDto
             {
-                if (!groupedSpecs.ContainsKey(kv.Key))
-                {
-                    groupedSpecs[kv.Key] = new List<object>();
-                }
-                groupedSpecs[kv.Key].Add(kv.Value);
+                Id = p.Id,
+                Name = p.Name,
+                Price = p.Price,
+                Image = image?.Url,
+                Specs = p.Specs ?? new()
+            };
+        }).ToList();
+
+        var allSpecKeys = productDtos
+            .SelectMany(p => p.Specs.Keys)
+            .Distinct()
+            .ToList();
+
+        var specRows = allSpecKeys.Select(key =>
+            new ComparisonSpecRowDto
+            {
+                Key = key,
+                Values = productDtos
+                    .Select(p => p.Specs.TryGetValue(key, out var v) ? v : null)
+                    .ToList()
             }
-        }
-        return Ok( new
+        ).ToList();
+
+        return Ok(new ComparisonResponseDto
         {
-            ComparisonId = comparison.Id,
             CategoryId = categoryId,
-            Products = products,
-            SpecsComparison = groupedSpecs
+            Products = productDtos,
+            Specs = specRows
         });
     }
+
 
     [Authorize]
     [HttpPost("add/{productId}")]
@@ -63,56 +87,65 @@ public class ComparisonsController : ControllerBase
 
         var product = await _context.Products.FindAsync(productId);
         if (product == null)
-        {
             return NotFound("Product not found");
-        }
 
         var comparison = await _context.Comparisons
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.Name == product.CategoryId.ToString());
-        
+            .FirstOrDefaultAsync(c =>
+                c.UserId == userId &&
+                c.Name == product.CategoryId.ToString()
+            );
+
         if (comparison == null)
         {
             comparison = new Comparison
             {
                 UserId = userId,
                 Name = product.CategoryId.ToString(),
-                Products = new List<int>()
+                Products = new[] { productId }
             };
+
             _context.Comparisons.Add(comparison);
         }
-
-        if (!comparison.Products.Contains(productId))
+        else if (!comparison.Products.Contains(productId))
         {
-            comparison.Products.Add(productId);
+            comparison.Products = comparison.Products
+                .Append(productId)
+                .ToArray();
         }
 
         await _context.SaveChangesAsync();
-        return Ok(comparison);
+        return Ok();
     }
+
 
     [Authorize]
     [HttpDelete("remove/{productId}")]
     public async Task<IActionResult> RemoveProductFromComparison(int productId)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-        var product = await _context.Products.FindAsync(productId);
-        if (product == null)
-            return NotFound("Product not found.");
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var comparison = await _context.Comparisons
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.Name == product.CategoryId.ToString());
+            .FirstOrDefaultAsync(c =>
+                c.UserId == userId &&
+                c.Products.Contains(productId)
+            );
 
         if (comparison == null)
-            return NotFound("Comparison not found.");
+            return NotFound();
 
-        comparison.Products.Remove(productId);
+        // ✅ remove element from array
+        comparison.Products = comparison.Products
+            .Where(id => id != productId)
+            .ToArray();
 
-        if (!comparison.Products.Any())
+        if (comparison.Products.Length == 0)
+        {
             _context.Comparisons.Remove(comparison);
+        }
 
         await _context.SaveChangesAsync();
         return NoContent();
     }
+
 
 }

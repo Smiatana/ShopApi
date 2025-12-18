@@ -242,3 +242,26 @@ public class OrderReadDto
     public List<OrderItemDto> Items { get; set; } = new();
 }
 
+public class ComparisonProductDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public decimal Price { get; set; }
+    public string? Image { get; set; }
+    public Dictionary<string, object> Specs { get; set; } = new();
+}
+
+public class ComparisonSpecRowDto
+{
+    public string Key { get; set; } = "";
+    public List<object?> Values { get; set; } = new();
+}
+
+public class ComparisonResponseDto
+{
+    public int CategoryId { get; set; }
+    public List<ComparisonProductDto> Products { get; set; } = new();
+    public List<ComparisonSpecRowDto> Specs { get; set; } = new();
+}
+
+

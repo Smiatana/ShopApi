@@ -28,7 +28,8 @@ public class ShopContext : DbContext
 
         modelBuilder.Entity<Comparison>()
             .Property(c => c.Products)
-            .HasColumnType("jsonb");
+            .HasColumnType("integer[]");
+
 
         modelBuilder.Entity<Image>()
         .Property(i => i.OwnerType)
