@@ -18,28 +18,60 @@ public class CartController : ControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<Cart>> GetCart()
+    public async Task<IActionResult> GetCart()
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var cart = await _context.Carts
-            .Include(c => c.Items)
+        .Where(c => c.UserId == userId)
+        .Include(c => c.Items)
             .ThenInclude(i => i.Product)
-            .FirstOrDefaultAsync(c => c.UserId == userId);
+                .ThenInclude(p => p.Discounts)
+        .ToListAsync();
 
-        if (cart == null)
-            cart = new Cart { UserId = userId, Items = new List<CartItem>() };
-            _context.Carts.Add(cart);
+
+        var productIds = cart.SelectMany(c => c.Items.Select(i => i.ProductId)).ToList();
+
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .ToListAsync();
+
+        var now = DateTime.UtcNow;
+
+        var cartDto = cart.Select(c => new
+        {
+            c.Id,
+            Items = c.Items.Select(i => new
+            {
+                i.Id,
+                i.ProductId,
+                i.Quantity,
+                Product = ProductMapper.ToListDto(i.Product, images, now)
+            })
+        }).FirstOrDefault();
+
+        if (cartDto == null)
+        {
+            var newCart = new Cart { UserId = userId };
+            _context.Carts.Add(newCart);
             await _context.SaveChangesAsync();
 
-        return cart;
+            return Ok(new
+            {
+                newCart.Id,
+                Items = Array.Empty<object>()
+            });
+        }
+
+        return Ok(cartDto);
     }
+
 
     [Authorize]
     [HttpPost("items")]
     public async Task<ActionResult<CartItem>> AddItem(int productId, int quantity)
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var cart = await _context.Carts
             .Include(c => c.Items)
@@ -71,14 +103,19 @@ public class CartController : ControllerBase
         }
         await _context.SaveChangesAsync();
 
-        return Ok(cart.Items);
+        return Ok(cart.Items.Select(i => new
+        {
+            i.Id,
+            i.ProductId,
+            i.Quantity
+        }));
     }
 
     [Authorize]
     [HttpPut("items/{itemId}")]
     public async Task<IActionResult> UpdateItem(int itemId, int quantity)
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var item = await _context.CartItems
             .Include(i => i.Cart)
@@ -97,7 +134,7 @@ public class CartController : ControllerBase
     [HttpDelete("items/{itemId}")]
     public async Task<IActionResult> RemoveItem(int itemId)
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var item = await _context.CartItems
             .Include(i => i.Cart)
@@ -116,7 +153,7 @@ public class CartController : ControllerBase
     [HttpDelete("clear")]
     public async Task<IActionResult> ClearCart()
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var cart = await _context.Carts
             .Include(c => c.Items)

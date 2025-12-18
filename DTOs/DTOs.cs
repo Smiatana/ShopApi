@@ -202,3 +202,43 @@ public class CreateReviewRequest
     public List<IFormFile>? Images { get; set; }
     public List<string>? RemovedImages { get; set; }
 }
+
+public class OrderItemDto
+{
+    public int Id { get; set; }
+    public int ProductId { get; set; }
+    public string Name { get; set; }
+    public string Brand { get; set; }
+    public decimal PriceAtPurchase { get; set; }
+    public int Quantity { get; set; }
+    public ImageDto? FirstImage { get; set; }
+}
+
+public class OrderDto
+{
+    public int Id { get; set; }
+    public decimal TotalPrice { get; set; }
+    public OrderStatus Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public List<OrderItemDto> Items { get; set; } = new();
+}
+public class CreateOrderRequest
+{
+    public List<OrderItemRequest> Items { get; set; } = new();
+}
+
+public class OrderItemRequest
+{
+    public int ProductId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class OrderReadDto
+{
+    public int Id { get; set; }
+    public string Status { get; set; } = "";
+    public string CreatedAt { get; set; } = "";
+    public decimal TotalPrice { get; set; }
+    public List<OrderItemDto> Items { get; set; } = new();
+}
+

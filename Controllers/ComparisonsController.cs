@@ -20,7 +20,7 @@ public class ComparisonsController : ControllerBase
     [HttpGet("category/{categoryId}")]
     public async Task<ActionResult<object>> GetComparison(int categoryId)
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var comparison = await _context.Comparisons
             .FirstOrDefaultAsync(c => c.UserId == userId && c.Name == categoryId.ToString());
@@ -59,7 +59,7 @@ public class ComparisonsController : ControllerBase
     [HttpPost("add/{productId}")]
     public async Task<IActionResult> AddProductToComparison(int productId)
     {
-        var userId = AuthHelper.GetUserId(User);
+        var userId = AuthHelper.GetUserId(User, _context);
 
         var product = await _context.Products.FindAsync(productId);
         if (product == null)

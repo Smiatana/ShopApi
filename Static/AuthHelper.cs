@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 
 public static class AuthHelper
 {
@@ -18,8 +19,20 @@ public static class AuthHelper
         return userId == ownerId;
     }
 
-    public static int GetUserId(ClaimsPrincipal user)
+    public static int GetUserId(ClaimsPrincipal user, ShopContext context)
     {
-        return int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var email = user.FindFirst(ClaimTypes.Name)?.Value;
+
+        if (string.IsNullOrEmpty(email))
+            throw new UnauthorizedAccessException("Email claim not found");
+
+        var dbUser = context.Users
+            .AsNoTracking()
+            .FirstOrDefault(u => u.Email == email);
+
+        if (dbUser == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        return dbUser.Id;
     }
 }
