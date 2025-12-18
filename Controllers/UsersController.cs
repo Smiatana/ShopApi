@@ -146,5 +146,58 @@ public class UsersController : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
+[HttpPut("me")]
+public async Task<IActionResult> UpdateMe(
+    [FromForm] UpdateUserProfileRequest request,
+    [FromServices] IWebHostEnvironment env)
+{
+    var email = User.Identity!.Name;
+
+    var user = await _context.Users
+        .Include(u => u.Images)
+        .FirstOrDefaultAsync(u => u.Email == email);
+
+    if (user == null)
+        return NotFound();
+
+    user.Name = request.Name;
+
+    if (request.Avatar != null && request.Avatar.Length > 0)
+        {
+            var uploads = Path.Combine(env.WebRootPath, "uploads");
+            Directory.CreateDirectory(uploads);
+
+            var fileName = Guid.NewGuid() + Path.GetExtension(request.Avatar.FileName);
+            var filePath = Path.Combine(uploads, fileName);
+
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await request.Avatar.CopyToAsync(stream);
+
+            var existingAvatar = user.Images
+                .FirstOrDefault(i => i.OwnerType == OwnerType.User && i.Position == 0);
+
+            if (existingAvatar != null)
+            {
+                existingAvatar.Url = $"/uploads/{fileName}";
+            }
+            else
+            {
+                _context.Images.Add(new Image
+                {
+                    OwnerType = OwnerType.User,
+                    OwnerId = user.Id,
+                    Url = $"/uploads/{fileName}",
+                    Position = 0,
+                    User = user
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+
 
 }

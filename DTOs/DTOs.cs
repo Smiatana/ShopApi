@@ -173,3 +173,32 @@ public class ProductImageDetailsDto
     public string? AltText { get; set; }
     public int Position { get; set; }
 }
+
+public class UpdateUserProfileRequest
+{
+    public string Name { get; set; } = null!;
+    public IFormFile? Avatar { get; set; }
+}
+
+
+public class ReviewDto
+{
+    public int Id { get; set; }
+    public int Rating { get; set; }
+    public string Title { get; set; }
+    public string Body { get; set; }
+    public string CreatedAt { get; set; }
+    public string UserName { get; set; }
+    public string UserAvatar { get; set; }
+    public List<string> Images { get; set; }
+    public string UserEmail { get; set; }
+}
+
+public class CreateReviewRequest
+{
+    public int Rating { get; set; }
+    public string Title { get; set; }
+    public string Body { get; set; }
+    public List<IFormFile>? Images { get; set; }
+    public List<string>? RemovedImages { get; set; }
+}
