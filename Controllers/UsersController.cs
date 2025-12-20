@@ -147,23 +147,23 @@ public class UsersController : ControllerBase
     }
 
     [Authorize]
-[HttpPut("me")]
-public async Task<IActionResult> UpdateMe(
-    [FromForm] UpdateUserProfileRequest request,
-    [FromServices] IWebHostEnvironment env)
-{
-    var email = User.Identity!.Name;
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe(
+        [FromForm] UpdateUserProfileRequest request,
+        [FromServices] IWebHostEnvironment env)
+    {
+        var email = User.Identity!.Name;
 
-    var user = await _context.Users
-        .Include(u => u.Images)
-        .FirstOrDefaultAsync(u => u.Email == email);
+        var user = await _context.Users
+            .Include(u => u.Images)
+            .FirstOrDefaultAsync(u => u.Email == email);
 
-    if (user == null)
-        return NotFound();
+        if (user == null)
+            return NotFound();
 
-    user.Name = request.Name;
+        user.Name = request.Name;
 
-    if (request.Avatar != null && request.Avatar.Length > 0)
+        if (request.Avatar != null && request.Avatar.Length > 0)
         {
             var uploads = Path.Combine(env.WebRootPath, "uploads");
             Directory.CreateDirectory(uploads);

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-public enum OwnerType { Product, Category, Review, User }
+public enum OwnerType { Product, Category, Review, User, Slider }
 public enum OrderStatus { Pending, Ready }
 
 public class User
@@ -145,4 +145,16 @@ public class Discount
     public bool Active { get; set; }
 
     public Product Product { get; set; }
+}
+
+public class Slider
+{
+    public int Id { get; set; }
+
+    public string? Title { get; set; }
+    public string? Subtitle { get; set; }
+    public string? Link { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
 }

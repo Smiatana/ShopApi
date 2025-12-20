@@ -264,4 +264,29 @@ public class ComparisonResponseDto
     public List<ComparisonSpecRowDto> Specs { get; set; } = new();
 }
 
+public class SliderDto
+{
+    public int Id { get; set; }
+    public string? Title { get; set; }
+    public string? Subtitle { get; set; }
+    public string? Link { get; set; }
+    public ImageDto? Image { get; set; }
+}
+
+public class CreateSliderRequest
+{
+    public string? Title { get; set; }
+    public string? Subtitle { get; set; }
+    public string? Link { get; set; }
+    public IFormFile Image { get; set; } = null!;
+}
+
+public class UpdateSliderRequest
+{
+    public string? Title { get; set; }
+    public string? Subtitle { get; set; }
+    public string? Link { get; set; }
+    public IFormFile? Image { get; set; }
+}
+
 

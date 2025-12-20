@@ -15,6 +15,8 @@ public class ShopContext : DbContext
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Review> Reviews { get; set; }
     public DbSet<Discount> Discounts { get; set; }
+    public DbSet<Slider> Sliders { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
