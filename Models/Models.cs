@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 
 public enum OwnerType { Product, Category, Review, User }
-public enum OrderStatus { Pending, Paid, Shipped, Delivered }
+public enum OrderStatus { Pending, Ready }
 
 public class User
 {

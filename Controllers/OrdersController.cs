@@ -14,6 +14,53 @@ public class OrdersController : ControllerBase
         _context = context;
     }
 
+    [Authorize(Roles = "Admin")]
+    [HttpGet("/api/admin/orders")]
+    public async Task<ActionResult<IEnumerable<OrderReadDto>>> GetAllOrders()
+    {
+        var orders = await _context.Orders
+            .Include(o => o.Items)
+                .ThenInclude(i => i.Product)
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        var productIds = orders.SelectMany(o => o.Items.Select(i => i.ProductId)).ToList();
+        var images = await _context.Images
+            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .ToListAsync();
+
+        return Ok(orders.Select(o => new OrderReadDto
+        {
+            Id = o.Id,
+            TotalPrice = o.TotalPrice,
+            Status = o.Status.ToString(),
+            CreatedAt = o.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+            Items = o.Items.Select(i =>
+            {
+                var img = images
+                    .Where(im => im.OwnerId == i.ProductId)
+                    .OrderBy(im => im.Position)
+                    .FirstOrDefault();
+
+                return new OrderItemDto
+                {
+                    Id = i.Id,
+                    ProductId = i.ProductId,
+                    Name = i.Product.Name,
+                    Brand = i.Product.Brand,
+                    PriceAtPurchase = i.PriceAtPurchase,
+                    Quantity = i.Quantity,
+                    FirstImage = img == null ? null : new ImageDto
+                    {
+                        Url = img.Url,
+                        AltText = img.AltText,
+                        Position = img.Position
+                    }
+                };
+            }).ToList()
+        }));
+    }
+
     [Authorize]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<OrderReadDto>>> GetOrders()
