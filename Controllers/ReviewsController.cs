@@ -51,6 +51,7 @@ public class ReviewsController : ControllerBase
         }).ToList();
     }
 
+
     [Authorize]
     [HttpPost("product/{productId}")]
     public async Task<IActionResult> Create(
@@ -130,14 +131,14 @@ public class ReviewsController : ControllerBase
         review.Title = request.Title;
         review.Body = request.Body;
 
-       if (request.RemovedImages != null && request.RemovedImages.Count > 0)
+        if (request.RemovedImages != null && request.RemovedImages.Count > 0)
         {
             var removedRelativeUrls = request.RemovedImages
                 .Select(url => new Uri(url).AbsolutePath)
                 .ToList();
 
             var imagesToRemove = _context.Images
-                .Where(i => i.OwnerType == OwnerType.Review 
+                .Where(i => i.OwnerType == OwnerType.Review
                             && i.OwnerId == review.Id
                             && removedRelativeUrls.Contains(i.Url));
 
@@ -209,7 +210,7 @@ public class ReviewsController : ControllerBase
 
     [Authorize]
     [HttpGet("me")]
-    public async Task<ActionResult<IEnumerable<ReviewDto>>> GetMyReviews()
+    public async Task<ActionResult<IEnumerable<MyReviewDto>>> GetMyReviews()
     {
         var email = User.Identity!.Name;
 
@@ -220,29 +221,27 @@ public class ReviewsController : ControllerBase
             .ToListAsync();
 
         var reviewIds = reviews.Select(r => r.Id).ToList();
+
         var reviewImages = await _context.Images
             .Where(i => i.OwnerType == OwnerType.Review && reviewIds.Contains(i.OwnerId))
             .ToListAsync();
 
-        return reviews.Select(r => new ReviewDto
+        return Ok(reviews.Select(r => new MyReviewDto
         {
             Id = r.Id,
             Rating = r.Rating,
             Title = r.Title,
             Body = r.Body,
             CreatedAt = r.CreatedAt.ToString("yyyy-MM-dd HH:mm"),
-            UserName = r.User.Name,
-            UserAvatar = r.User.Images
-                .Where(i => i.OwnerType == OwnerType.User && i.Position == 0)
-                .Select(i => i.Url)
-                .FirstOrDefault(),
+
+            ProductId = r.ProductId,
+            ProductName = r.Product.Name,
+
             Images = reviewImages
                 .Where(i => i.OwnerId == r.Id)
                 .OrderBy(i => i.Position)
                 .Select(i => i.Url)
-                .ToList(),
-            UserEmail = r.User.Email
-        }).ToList();
+                .ToList()
+        }));
     }
 }
-

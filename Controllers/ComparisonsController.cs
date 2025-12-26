@@ -5,8 +5,13 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using System.Formats.Asn1;
 using System.Security.Claims;
 
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ComparisonsController : ControllerBase
 {
     private readonly ShopContext _context;
@@ -16,14 +21,29 @@ public class ComparisonsController : ControllerBase
         _context = context;
     }
 
-    [Authorize]
-    [HttpGet("category/{categoryId}")]
-    public async Task<ActionResult<ComparisonResponseDto>> GetComparison(int categoryId)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<string>>> GetMyComparisons()
+    {
+        var userId = AuthHelper.GetUserId(User, _context);
+
+        var names = await _context.Comparisons
+            .Where(c => c.UserId == userId)
+            .Select(c => c.Name)
+            .ToListAsync();
+
+        return Ok(names);
+    }
+
+    [HttpGet("{name}")]
+    public async Task<ActionResult<ComparisonResponseDto>> GetComparison(string name)
     {
         var userId = AuthHelper.GetUserId(User, _context);
 
         var comparison = await _context.Comparisons
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.Name == categoryId.ToString());
+            .FirstOrDefaultAsync(c =>
+                c.UserId == userId &&
+                c.Name == name
+            );
 
         if (comparison == null)
             return NotFound();
@@ -35,7 +55,10 @@ public class ComparisonsController : ControllerBase
         var productIds = products.Select(p => p.Id).ToList();
 
         var images = await _context.Images
-            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .Where(i =>
+                i.OwnerType == OwnerType.Product &&
+                productIds.Contains(i.OwnerId)
+            )
             .ToListAsync();
 
         var productDtos = products.Select(p =>
@@ -55,33 +78,28 @@ public class ComparisonsController : ControllerBase
             };
         }).ToList();
 
-        var allSpecKeys = productDtos
+        var specRows = productDtos
             .SelectMany(p => p.Specs.Keys)
             .Distinct()
-            .ToList();
-
-        var specRows = allSpecKeys.Select(key =>
-            new ComparisonSpecRowDto
+            .Select(key => new ComparisonSpecRowDto
             {
                 Key = key,
                 Values = productDtos
                     .Select(p => p.Specs.TryGetValue(key, out var v) ? v : null)
                     .ToList()
-            }
-        ).ToList();
+            })
+            .ToList();
 
         return Ok(new ComparisonResponseDto
         {
-            CategoryId = categoryId,
+            CategoryName = comparison.Name,
             Products = productDtos,
             Specs = specRows
         });
     }
 
-
-    [Authorize]
     [HttpPost("add/{productId}")]
-    public async Task<IActionResult> AddProductToComparison(int productId)
+    public async Task<IActionResult> AddProduct(int productId)
     {
         var userId = AuthHelper.GetUserId(User, _context);
 
@@ -89,10 +107,14 @@ public class ComparisonsController : ControllerBase
         if (product == null)
             return NotFound("Product not found");
 
+        var category = await _context.Categories.FindAsync(product.CategoryId);
+        if (category == null)
+            return NotFound("Category not found");
+
         var comparison = await _context.Comparisons
             .FirstOrDefaultAsync(c =>
                 c.UserId == userId &&
-                c.Name == product.CategoryId.ToString()
+                c.Name == category.Name
             );
 
         if (comparison == null)
@@ -100,7 +122,7 @@ public class ComparisonsController : ControllerBase
             comparison = new Comparison
             {
                 UserId = userId,
-                Name = product.CategoryId.ToString(),
+                Name = category.Name,
                 Products = new[] { productId }
             };
 
@@ -117,10 +139,8 @@ public class ComparisonsController : ControllerBase
         return Ok();
     }
 
-
-    [Authorize]
     [HttpDelete("remove/{productId}")]
-    public async Task<IActionResult> RemoveProductFromComparison(int productId)
+    public async Task<IActionResult> RemoveProduct(int productId)
     {
         var userId = AuthHelper.GetUserId(User, _context);
 
@@ -133,7 +153,6 @@ public class ComparisonsController : ControllerBase
         if (comparison == null)
             return NotFound();
 
-        // ✅ remove element from array
         comparison.Products = comparison.Products
             .Where(id => id != productId)
             .ToArray();
@@ -146,6 +165,4 @@ public class ComparisonsController : ControllerBase
         await _context.SaveChangesAsync();
         return NoContent();
     }
-
-
 }

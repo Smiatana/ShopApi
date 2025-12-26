@@ -19,8 +19,13 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register(string email, string password, string name, string role = "User")
+    public async Task<IActionResult> Register([FromBody]RegisterRequest request)
     {
+        string email = request.Email;
+        string password = request.Password;
+        string name = request.Name;
+        string role = request.Role;
+
         if (await _context.Users.AnyAsync(u => u.Email == email))
             return BadRequest("User already exists.");
 

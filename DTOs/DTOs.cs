@@ -6,6 +6,14 @@ public class LoginRequest
     public string Password { get; set; }
 }
 
+public class RegisterRequest
+{
+    public string Email { get; set; }
+    public string Password { get; set; }
+    public string Name { get; set; }
+    public string Role { get; set; } = "User";
+}
+
 public class CreateCategoryRequest
 {
     public string Name { get; set; }
@@ -259,7 +267,7 @@ public class ComparisonSpecRowDto
 
 public class ComparisonResponseDto
 {
-    public int CategoryId { get; set; }
+    public string? CategoryName { get; set; }
     public List<ComparisonProductDto> Products { get; set; } = new();
     public List<ComparisonSpecRowDto> Specs { get; set; } = new();
 }
@@ -296,4 +304,19 @@ public class ControlImageDto
     public string? AltText { get; set; }
     public OwnerType OwnerType { get; set; }
     public string Username { get; set; }
+}
+
+public class MyReviewDto
+{
+    public int Id { get; set; }
+
+    public int Rating { get; set; }
+    public string Title { get; set; } = null!;
+    public string Body { get; set; } = null!;
+    public string CreatedAt { get; set; } = null!;
+
+    public string ProductName { get; set; } = null!;
+    public int ProductId { get; set; }
+
+    public List<string> Images { get; set; } = new();
 }

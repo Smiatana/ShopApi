@@ -14,7 +14,7 @@ public class CategoriesController : ControllerBase
         _context = context;
     }
 
-#region GET
+    #region GET
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<object>>> GetCategories()
@@ -51,16 +51,21 @@ public class CategoriesController : ControllerBase
         return category;
     }
 
-    [HttpGet("{id}/products")]
-    public async Task<ActionResult<IEnumerable<ProductListDto>>> GetProductsByCategory(int id)
+    [HttpGet("{id?}/products")]
+    public async Task<ActionResult<IEnumerable<ProductListDto>>> GetProductsByCategory(int? id)
     {
-        if (!await _context.Categories.AnyAsync(c => c.Id == id))
-            return NotFound();
+        IQueryable<Product> query = _context.Products
+            .Include(p => p.Discounts);
 
-        var products = await _context.Products
-            .Where(p => p.CategoryId == id)
-            .Include(p => p.Discounts)
-            .ToListAsync();
+        if (id.HasValue)
+        {
+            if (!await _context.Categories.AnyAsync(c => c.Id == id.Value))
+                return NotFound();
+
+            query = query.Where(p => p.CategoryId == id.Value);
+        }
+
+        var products = await query.ToListAsync();
 
         var productIds = products.Select(p => p.Id).ToList();
 
@@ -70,14 +75,13 @@ public class CategoriesController : ControllerBase
 
         var now = DateTime.UtcNow;
 
-        return products
-            .Select(p => ProductMapper.ToListDto(p, images, now))
-            .ToList();
+        return Ok(products.Select(p => ProductMapper.ToListDto(p, images, now)));
     }
 
 
-#endregion
-#region POST
+
+    #endregion
+    #region POST
 
     [Authorize(Roles = "Admin")]
     [HttpPost]
@@ -139,8 +143,8 @@ public class CategoriesController : ControllerBase
     }
 
 
-#endregion
-#region PUT
+    #endregion
+    #region PUT
 
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
@@ -222,8 +226,8 @@ public class CategoriesController : ControllerBase
     }
 
 
-#endregion
-#region DELETE
+    #endregion
+    #region DELETE
 
     [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
@@ -239,5 +243,5 @@ public class CategoriesController : ControllerBase
         return NoContent();
     }
 
-#endregion
+    #endregion
 }

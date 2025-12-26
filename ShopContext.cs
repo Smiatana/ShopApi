@@ -37,26 +37,6 @@ public class ShopContext : DbContext
         .Property(i => i.OwnerType)
         .HasConversion<string>();
 
-        modelBuilder.Entity<Image>()
-            .HasOne(i => i.Product)
-            .WithMany(p => p.Images)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Image>()
-            .HasOne(i => i.Review)
-            .WithMany(r => r.Images)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Image>()
-            .HasOne(i => i.User)
-            .WithMany(u => u.Images)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Image>()
-            .HasOne(i => i.Category)
-            .WithMany()
-            .OnDelete(DeleteBehavior.Cascade);
-
         modelBuilder.Entity<Order>()
             .Property(o => o.Status)
             .HasConversion<string>();

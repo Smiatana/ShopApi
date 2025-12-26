@@ -54,44 +54,45 @@ public class ProductsController : ControllerBase
     }
 
 
-   [HttpGet("search")]
+    [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<ProductListDto>>> SearchProducts(
         [FromQuery] string? query,
-        [FromQuery] int? categoryId = null)
+        [FromQuery] int? categoryId)
     {
-        if (string.IsNullOrWhiteSpace(query) && categoryId == null)
-            return BadRequest("Provide query or categoryId.");
-
-        var q = _context.Products
-            .Include(p => p.Discounts)
-            .AsQueryable();
+        IQueryable<Product> q = _context.Products
+            .Include(p => p.Discounts);
 
         if (!string.IsNullOrWhiteSpace(query))
         {
-            var lowered = query.ToLower();
+            var pattern = $"%{query.Trim()}%";
+
             q = q.Where(p =>
-                p.Name.ToLower().Contains(lowered) ||
-                p.Brand.ToLower().Contains(lowered) ||
-                p.Description.ToLower().Contains(lowered));
+                EF.Functions.Like(p.Name, pattern) ||
+                EF.Functions.Like(p.Brand, pattern) ||
+                EF.Functions.Like(p.Description, pattern));
         }
 
         if (categoryId.HasValue)
+        {
             q = q.Where(p => p.CategoryId == categoryId.Value);
+        }
 
         var products = await q.ToListAsync();
 
         var productIds = products.Select(p => p.Id).ToList();
 
         var images = await _context.Images
-            .Where(i => i.OwnerType == OwnerType.Product && productIds.Contains(i.OwnerId))
+            .Where(i =>
+                i.OwnerType == OwnerType.Product &&
+                productIds.Contains(i.OwnerId))
             .ToListAsync();
 
         var now = DateTime.UtcNow;
 
-        return products
-            .Select(p => ProductMapper.ToListDto(p, images, now))
-            .ToList();
+        return Ok(products.Select(p =>
+            ProductMapper.ToListDto(p, images, now)));
     }
+
 
 
 
